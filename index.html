@@ -3145,8 +3145,9 @@
             
             tableBody.innerHTML = '';
             
-            const pendingCases = cases.filter(caseData => caseData.status === "Pending Approval");
-            
+            const pendingCases = allCases.filter(
+   c => c.status?.toLowerCase().includes("pending")
+);            
             if (pendingCases.length === 0) {
                 tableBody.innerHTML = '<tr><td colspan="7" class="empty-state">No pending approval cases found</td></tr>';
                 return;
@@ -3258,26 +3259,54 @@
             `).join('');
         }
         
-        function updateAdminPendingCases(cases) {
-            const pendingCasesList = document.getElementById('admin-pending-cases-list');
-            if (!pendingCasesList) return;
-            
-            const pendingCases = cases.filter(c => 
-                c.status === 'pending' || c.status === 'Pending' || 
-                c.status === 'pending upload' || c.status === 'Pending Upload' ||
-                c.status === 'Pending Treatment Plan'
-            );
-            
-            if (pendingCases.length === 0) {
-                pendingCasesList.innerHTML = `
-                    <div class="admin-empty-state">
-                        <i class="fas fa-check-circle"></i>
-                        <h3>No Pending Cases</h3>
-                        <p>All cases are up to date.</p>
-                    </div>
-                `;
-                return;
-            }
+        const pendingCasesList = document.getElementById('admin-pending-cases-list');
+if (!pendingCasesList) return;
+
+// Helper: normalize any status string
+const norm = s => (s ?? '').toString().trim().toLowerCase();
+
+// Status values/keywords we consider "pending"
+const PENDING_MATCHES = new Set([
+  'pending',
+  'pending upload',
+  'pending treatment plan',
+  'awaiting upload',
+  'awaiting files',
+  'awaiting documents'
+]);
+
+// Build the pending list
+const pendingCases = (cases || []).filter(c => {
+  // try multiple possible fields for status
+  const st = norm(c.status || c.caseStatus || c.currentStatus || c.stage);
+
+  // 1) exact matches or keywordy states
+  if (PENDING_MATCHES.has(st) || st.startsWith('pending') || st.includes('upload')) return true;
+
+  // 2) heuristic fallback: treat as pending if it exists but has no files yet
+  const hasFiles =
+    (Array.isArray(c.files) && c.files.length) ||
+    (Array.isArray(c.attachments) && c.attachments.length) ||
+    (Array.isArray(c.stlFiles) && c.stlFiles.length);
+
+  return !hasFiles; // still “pending upload” if nothing uploaded
+});
+
+// Optional: see what statuses you actually have
+console.log('Unique statuses:', [...new Set((cases||[]).map(c => norm(c.status || c.caseStatus || c.currentStatus || c.stage)))]);
+
+if (pendingCases.length === 0) {
+  pendingCasesList.innerHTML = `
+    <div class="admin-empty-state">
+      <i class="fas fa-check-circle"></i>
+      <h3>No Pending Cases</h3>
+      <p>All cases are up to date.</p>
+    </div>
+  `;
+  return;
+}
+
+// ...render pendingCases here
             
             pendingCasesList.innerHTML = pendingCases.map(caseItem => `
                 <div class="admin-case-item">
