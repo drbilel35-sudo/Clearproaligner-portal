@@ -2458,57 +2458,64 @@
             ];
         }
 
-        // Add this function to process backend data
-        function processBackendData(rawData) {
-            console.log('🔄 Processing backend data:', rawData);
+        // Process backend data - ENHANCED VERSION
+function processBackendData(rawData) {
+    console.log('🔄 Processing backend data:', rawData);
+    
+    if (!rawData) return [];
+    
+    // Handle different response formats
+    let casesArray = [];
+    
+    if (Array.isArray(rawData)) {
+        casesArray = rawData;
+    } else if (rawData.data && Array.isArray(rawData.data)) {
+        casesArray = rawData.data;
+    } else if (rawData.cases && Array.isArray(rawData.cases)) {
+        casesArray = rawData.cases;
+    } else {
+        console.warn('⚠️ Unknown data format, using raw data as array');
+        casesArray = [rawData].filter(Boolean);
+    }
+    
+    console.log(`📦 Processing ${casesArray.length} cases from backend`);
+    
+    // Ensure each case has required fields with better fallbacks
+    return casesArray.map((caseItem, index) => {
+        // Create a more robust case object
+        const processedCase = {
+            _id: caseItem._id || caseItem.id || `case-${index}-${Date.now()}`,
+            caseId: caseItem.caseId || caseItem.caseID || caseItem.id || `CP-${new Date().getFullYear()}-${index + 1}`,
+            patient: caseItem.patient || caseItem.patientName || 'Unknown Patient',
+            age: caseItem.age || caseItem.patientAge || 0,
+            orderDate: caseItem.orderDate || caseItem.createdAt || caseItem.date || new Date().toISOString().split('T')[0],
+            doctor: caseItem.doctor || caseItem.dentist || caseItem.doctorName || 'Unknown Doctor',
+            status: caseItem.status || caseItem.caseStatus || 'Pending Treatment Plan',
+            submittedBy: caseItem.submittedBy || caseItem.doctorEmail || caseItem.doctor || 'unknown',
             
-            if (!rawData) return [];
+            // Add other fields with fallbacks
+            impressionType: caseItem.impressionType || 'physical',
+            uploadType: caseItem.uploadType || 'stl',
+            archSelection: caseItem.archSelection || 'both',
+            selectedTeeth: caseItem.selectedTeeth || [],
+            instructions: caseItem.instructions || '',
+            createdAt: caseItem.createdAt || new Date(),
+            updatedAt: caseItem.updatedAt || new Date(),
             
-            // Handle different response formats
-            let casesArray = [];
-            
-            if (Array.isArray(rawData)) {
-                casesArray = rawData;
-            } else if (rawData.data && Array.isArray(rawData.data)) {
-                casesArray = rawData.data;
-            } else if (rawData.cases && Array.isArray(rawData.cases)) {
-                casesArray = rawData.cases;
-            } else {
-                console.warn('⚠️ Unknown data format, using raw data as array');
-                casesArray = [rawData].filter(Boolean);
-            }
-            
-            // Ensure each case has required fields
-            return casesArray.map((caseItem, index) => {
-                // Log the case structure for debugging
-                if (index === 0) {
-                    console.log('📝 Sample case structure from backend:', caseItem);
-                    console.log('🔑 Case keys:', Object.keys(caseItem));
-                }
-                
-                return {
-                    _id: caseItem._id || caseItem.id || `case-${index}-${Date.now()}`,
-                    caseId: caseItem.caseId || caseItem.caseID || caseItem.id || `CP-${new Date().getFullYear()}-${index + 1}`,
-                    patient: caseItem.patient || caseItem.patientName || caseItem.patientName || 'Unknown Patient',
-                    age: caseItem.age || caseItem.patientAge || 0,
-                    orderDate: caseItem.orderDate || caseItem.createdAt || caseItem.date || new Date().toISOString().split('T')[0],
-                    doctor: caseItem.doctor || caseItem.dentist || caseItem.doctorName || 'Unknown Doctor',
-                    status: caseItem.status || caseItem.caseStatus || 'Pending Treatment Plan',
-                    submittedBy: caseItem.submittedBy || caseItem.doctorEmail || caseItem.doctor || 'unknown',
-                    // Add other fields with fallbacks
-                    impressionType: caseItem.impressionType || 'physical',
-                    uploadType: caseItem.uploadType || 'stl',
-                    archSelection: caseItem.archSelection || 'both',
-                    selectedTeeth: caseItem.selectedTeeth || [],
-                    instructions: caseItem.instructions || '',
-                    createdAt: caseItem.createdAt || new Date(),
-                    updatedAt: caseItem.updatedAt || new Date(),
-                    // Add treatment plan and invoice fields
-                    treatmentPlan: caseItem.treatmentPlan || null,
-                    invoice: caseItem.invoice || null
-                };
-            });
+            // Add treatment plan and invoice fields
+            treatmentPlan: caseItem.treatmentPlan || null,
+            invoice: caseItem.invoice || null
+        };
+        
+        // Log first case for debugging
+        if (index === 0) {
+            console.log('📝 Sample processed case:', processedCase);
+            console.log('🔑 Processed case keys:', Object.keys(processedCase));
         }
+        
+        return processedCase;
+    });
+}
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
@@ -2822,24 +2829,34 @@
             });
             
             // Add debug button
-            const debugBtn = document.createElement('button');
-            debugBtn.textContent = '🐛 Debug Data';
-            debugBtn.className = 'btn btn-warning btn-sm';
-            debugBtn.style.position = 'fixed';
-            debugBtn.style.top = '70px';
-            debugBtn.style.right = '10px';
-            debugBtn.style.zIndex = '10000';
-            debugBtn.onclick = function() {
-                console.clear();
-                console.log('=== DEBUG MODE ===');
-                debugDataFlow();
-                loadCases();
-            };
-            document.body.appendChild(debugBtn);
-            
-            // Load initial data
-            loadCases();
-        }
+            // Add this function to debug admin data
+function debugAdminData() {
+    console.group('🔧 ADMIN DATA DEBUG');
+    console.log('📊 Total cases:', cases.length);
+    console.log('📋 All cases:', cases);
+    
+    // Count by status for debugging
+    const statusCount = {};
+    cases.forEach(c => {
+        const status = c.status || 'No Status';
+        statusCount[status] = (statusCount[status] || 0) + 1;
+    });
+    console.log('📈 Status distribution:', statusCount);
+    
+    // Check what the admin sections would show
+    console.log('👀 Pending cases count:', cases.filter(c => 
+        c.status === 'Pending Treatment Plan' || 
+        c.status === 'pending' || 
+        c.status === 'Pending' ||
+        c.status?.toLowerCase().includes('pending') ||
+        !c.status
+    ).length);
+    
+    console.groupEnd();
+}
+
+// Call this in your loadCases function after processing data
+// debugAdminData();
         
         // Setup admin dashboard
         function setupAdminDashboard() {
@@ -2971,46 +2988,69 @@
             populateTreatmentCasesTable(doctorCases.length > 0 ? doctorCases : cases);
         }
         
-        // Update admin dashboard
-        function updateAdminDashboard() {
-            // Count cases by status
-            const statusCounts = {
-                total: cases.length,
-                pending: cases.filter(c => c.status === 'Pending Treatment Plan').length,
-                revision: cases.filter(c => c.status === 'Pending Revision').length,
-                hold: cases.filter(c => c.status === 'On Hold').length,
-                cancelled: cases.filter(c => c.status === 'Cancelled').length,
-                completed: cases.filter(c => c.status === 'Approved' || c.status === 'Completed').length
-            };
-            
-            // Update stats cards
-            document.getElementById('total-cases').textContent = statusCounts.total;
-            document.getElementById('pending-cases').textContent = statusCounts.pending;
-            document.getElementById('revision-cases').textContent = statusCounts.revision;
-            document.getElementById('hold-cases').textContent = statusCounts.hold;
-            document.getElementById('cancelled-cases').textContent = statusCounts.cancelled;
-            
-            // Update badge counts
-            document.getElementById('pending-badge').textContent = statusCounts.pending;
-            document.getElementById('revision-badge').textContent = statusCounts.revision;
-            document.getElementById('hold-badge').textContent = statusCounts.hold;
-            document.getElementById('cancelled-badge').textContent = statusCounts.cancelled;
-            
-            // Update recent activity
-            updateAdminRecentActivity(cases);
-            
-            // Update pending cases
-            updateAdminPendingCases(cases);
-            
-            // Update revision cases
-            updateAdminRevisionCases(cases);
-            
-            // Update hold cases
-            updateAdminHoldCases(cases);
-            
-            // Update cancelled cases
-            updateAdminCancelledCases(cases);
-        }
+        // Update admin dashboard - FIXED VERSION
+function updateAdminDashboard() {
+    console.log('🔄 Updating admin dashboard with cases:', cases);
+    
+    // More flexible status counting with multiple possible status values
+    const statusCounts = {
+        total: cases.length,
+        pending: cases.filter(c => 
+            c.status === 'Pending Treatment Plan' || 
+            c.status === 'pending' || 
+            c.status === 'Pending' ||
+            c.status?.toLowerCase().includes('pending') ||
+            !c.status // Treat cases without status as pending
+        ).length,
+        revision: cases.filter(c => 
+            c.status === 'Pending Revision' || 
+            c.status === 'revision' ||
+            c.status?.toLowerCase().includes('revision')
+        ).length,
+        hold: cases.filter(c => 
+            c.status === 'On Hold' || 
+            c.status === 'hold' ||
+            c.status?.toLowerCase().includes('hold')
+        ).length,
+        cancelled: cases.filter(c => 
+            c.status === 'Cancelled' || 
+            c.status === 'cancelled' ||
+            c.status?.toLowerCase().includes('cancelled')
+        ).length,
+        completed: cases.filter(c => 
+            c.status === 'Approved' || 
+            c.status === 'Completed' ||
+            c.status === 'completed' ||
+            c.status?.toLowerCase().includes('approved') ||
+            c.status?.toLowerCase().includes('completed')
+        ).length
+    };
+    
+    console.log('📊 Admin status counts:', statusCounts);
+    
+    // Update stats cards
+    document.getElementById('total-cases').textContent = statusCounts.total;
+    document.getElementById('pending-cases').textContent = statusCounts.pending;
+    document.getElementById('revision-cases').textContent = statusCounts.revision;
+    document.getElementById('hold-cases').textContent = statusCounts.hold;
+    document.getElementById('cancelled-cases').textContent = statusCounts.cancelled;
+    
+    // Update badge counts
+    document.getElementById('pending-badge').textContent = statusCounts.pending;
+    document.getElementById('revision-badge').textContent = statusCounts.revision;
+    document.getElementById('hold-badge').textContent = statusCounts.hold;
+    document.getElementById('cancelled-badge').textContent = statusCounts.cancelled;
+    
+    // Update all sections
+    updateAdminRecentActivity(cases);
+    updateAdminPendingCases(cases);
+    updateAdminRevisionCases(cases);
+    updateAdminHoldCases(cases);
+    updateAdminCancelledCases(cases);
+    
+    // Also update messages count (you can implement this later)
+    document.getElementById('messages-badge').textContent = '0';
+}
         
         // Populate doctor tables
         function populateRecentCasesTable(cases) {
