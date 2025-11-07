@@ -3336,26 +3336,26 @@
         
         function updateAdminPendingCases(cases) {
             const pendingCasesList = document.getElementById('admin-pending-cases-list');
-            if (!pendingCasesList) return;
-            
-            const pendingCases = cases.filter(c => 
-                c.status === 'Pending Treatment Plan' || 
-                c.status === 'pending' || 
-                c.status === 'Pending' ||
-                c.status?.toLowerCase().includes('pending') ||
-                !c.status
-            );
-            
-            if (pendingCases.length === 0) {
-                pendingCasesList.innerHTML = `
-                    <div class="admin-empty-state">
-                        <i class="fas fa-check-circle"></i>
-                        <h3>No Pending Cases</h3>
-                        <p>All cases are up to date.</p>
-                    </div>
-                `;
-                return;
-            }
+if (!pendingCasesList) return;
+
+// normalize helper
+const norm = s => (s ?? "").toString().trim().toLowerCase();
+
+const pendingCases = cases.filter(c => {
+    const s = norm(c.status);
+    return s.includes("pending");   // ✅ accepts ALL pending variations
+});
+
+if (pendingCases.length === 0) {
+    pendingCasesList.innerHTML = `
+        <div class="admin-empty-state">
+            <i class="fas fa-check-circle"></i>
+            <h3>No Pending Cases</h3>
+            <p>All cases are up to date.</p>
+        </div>
+    `;
+    return;
+}
             
             pendingCasesList.innerHTML = pendingCases.map(caseItem => `
                 <div class="admin-case-item">
