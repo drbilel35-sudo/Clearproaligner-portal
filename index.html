@@ -3994,5 +3994,225 @@
             showLoginPage();
         }
     </script>
+
+    <script>
+(() => {
+  // ---- Helpers ----
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const show = el => el && (el.style.display = '');
+  const hide = el => el && (el.style.display = 'none');
+  const notify = (msg, type='success') => {
+    const n = $('#notification');
+    const t = $('#notification-text');
+    if(!n || !t) return;
+    t.textContent = msg;
+    n.className = 'notification active' + (type==='error' ? ' error' : type==='warning' ? ' warning' : '');
+    setTimeout(() => n.classList.remove('active'), 2200);
+  };
+
+  // ---- Login (demo) ----
+  const loginForm = $('#loginForm');
+  const loginPage = $('#loginPage');
+  const doctorPortal = $('#doctorPortal');
+  const adminDash = $('#adminDashboard');
+
+  let session = { type: null, fullName: null };
+
+  const demoUsers = {
+    'dr.hilda': { password: 'clearpro123', type: 'doctor', fullName: 'Dr. Hilda Naeimi' },
+    'dr.smith': { password: 'aligner2024', type: 'doctor', fullName: 'Dr. Robert Smith' },
+    'admin': { password: 'Admin123!', type: 'admin', fullName: 'System Administrator' }
+  };
+
+  loginForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const u = $('#username').value.trim();
+    const p = $('#password').value;
+    const rec = demoUsers[u];
+    if (!rec || rec.password !== p) {
+      notify('Invalid username or password', 'error');
+      return;
+    }
+    session = { type: rec.type, fullName: rec.fullName };
+    hide(loginPage);
+    if (rec.type === 'doctor') {
+      $('#userDisplayName').textContent = rec.fullName;
+      $('#userAvatar').textContent = (rec.fullName.match(/\b[A-Z]/g) || ['DR']).slice(0,2).join('');
+      show(doctorPortal);
+      notify('Signed in as Doctor');
+    } else {
+      $('#admin-name').textContent = rec.fullName;
+      show(adminDash);
+      notify('Signed in as Admin');
+    }
+  });
+
+  $('#passwordToggle')?.addEventListener('click', () => {
+    const input = $('#password');
+    if (!input) return;
+    input.type = input.type === 'password' ? 'text' : 'password';
+  });
+
+  // ---- Doctor Portal: tabs + mobile menu ----
+  const nav = $('#navTabs');
+  const mobileBtn = $('#mobileMenuBtn');
+  mobileBtn?.addEventListener('click', () => nav?.classList.toggle('active'));
+
+  nav?.addEventListener('click', (e) => {
+    const link = e.target.closest('.nav-link');
+    if (!link) return;
+    e.preventDefault();
+    $$('.nav-link').forEach(a => a.classList.remove('active'));
+    link.classList.add('active');
+    const id = link.dataset.tab;
+    $$('.tab-content').forEach(c => c.classList.remove('active'));
+    const tab = document.getElementById(id);
+    tab?.classList.add('active');
+  });
+
+  // Stats cards click-through
+  $$('.stat-card').forEach(c => c.added = c.addEventListener('click', () => {
+    const target = c.getAttribute('data-tab');
+    if (!target) return;
+    const link = $(`.nav-link[data-tab="${target}"]`);
+    link?.click();
+  }));
+
+  // ---- Toggle groups (scan/upload/arch) ----
+  function makeSelectable(groupSel, itemSel, selectedClass='selected') {
+    const groupEls = $$(groupSel);
+    groupEls.forEach(g => {
+      g.addEventListener('click', (e) => {
+        const item = e.target.closest(itemSel);
+        if (!item) return;
+        groupEls.forEach(el => el.classList.remove(selectedClass));
+        item.classList.add(selectedClass);
+        // Special-case sections
+        if (groupSel.includes('.upload-options')) {
+          const isSTL = item.dataset.upload === 'stl';
+          $('#stl-upload-section')?.classList.toggle('hidden', !isSTL);
+          $('#image-upload-section')?.classList.toggle('hidden', isSTL);
+        }
+      });
+    });
+  }
+  makeSelectable('.scan-options', '.scan-option');
+  makeSelectable('.upload-options', '.upload-option');
+  makeSelectable('.arch-options', '.arch-option');
+
+  // ---- Teeth selection grid ----
+  $$('.tooth').forEach(t => {
+    t.addEventListener('click', () => {
+      const cb = t.querySelector('input[type="checkbox"]');
+      if (!cb) return;
+      cb.checked = !cb.checked;
+      t.classList.toggle('selected', cb.checked);
+    });
+  });
+
+  // ---- File uploads (client-side preview only) ----
+  function wireDropzone(wrapperSel, inputSel, listSel) {
+    const wrapper = $(wrapperSel), input = $(inputSel), list = $(listSel);
+    if (!wrapper || !input || !list) return;
+
+    const render = (files) => {
+      list.innerHTML = '';
+      [...files].forEach(f => {
+        const row = document.createElement('div');
+        row.className = 'file-item';
+        row.innerHTML = `
+          <div class="file-name"><i class="fas fa-file"></i><span>${f.name}</span></div>
+        `;
+        list.appendChild(row);
+      });
+      notify(`${files.length} file(s) added`);
+    };
+
+    wrapper.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => render(input.files));
+
+    ['dragenter','dragover'].forEach(evt =>
+      wrapper.addEventListener(evt, e => { e.preventDefault(); wrapper.classList.add('hover'); })
+    );
+    ['dragleave','drop'].forEach(evt =>
+      wrapper.addEventListener(evt, e => { e.preventDefault(); wrapper.classList.remove('hover'); })
+    );
+    wrapper.addEventListener('drop', (e) => {
+      const files = e.dataTransfer.files || [];
+      render(files);
+    });
+  }
+  wireDropzone('#stlFileUpload', '#stlFileInput', '#stlUploadedFiles');
+  wireDropzone('#imageFileUpload', '#imageFileInput', '#imageUploadedFiles');
+
+  // ---- Case form (demo submit) ----
+  const caseForm = $('#case-form');
+  caseForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    // Collect minimal payload
+    const data = {
+      id: $('#case-id')?.value || `CP-${Date.now()}`,
+      date: $('#order-date')?.value || new Date().toISOString().slice(0,10),
+      doctor: $('#doctor')?.value || '',
+      patient: $('#patient')?.value || '',
+      age: Number($('#age')?.value || 0),
+      instructions: $('#instructions')?.value || '',
+      selectedTeeth: $$('.tooth input:checked').map(cb => cb.value)
+    };
+    // TODO: POST to backend; for now, just append to Recent Cases
+    const tbody = $('#recent-cases-table tbody');
+    if (tbody) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="case-id">${data.id}</td>
+        <td>${data.patient}</td>
+        <td>${data.age}</td>
+        <td>${data.date}</td>
+        <td><span class="status status-pending">Pending</span></td>
+      `;
+      tbody.prepend(tr);
+    }
+    notify('Case registered (demo). Hook up your API next.');
+    caseForm.reset();
+  });
+
+  // ---- Backend hook (skeleton) ----
+  const API = {
+    base: (window.BACKEND_API_URL || '').replace(/\/$/, ''),
+    async listCases() {
+      if (!this.base) return [];
+      try {
+        const res = await axios.get(`${this.base}/cases`);
+        return Array.isArray(res.data) ? res.data : [];
+      } catch (e) {
+        console.warn('Backend not reachable yet', e);
+        return [];
+      }
+    }
+  };
+
+  // Populate recent cases (if backend live)
+  (async () => {
+    const rows = await API.listCases();
+    const tbody = $('#recent-cases-table tbody');
+    if (tbody && rows.length) {
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td class="case-id">${r.caseId || r._id || ''}</td>
+          <td>${r.patient || ''}</td>
+          <td>${r.age ?? ''}</td>
+          <td>${(r.orderDate || '').slice(0,10)}</td>
+          <td><span class="status ${r.status==='Approved'?'status-completed':'status-pending'}">${r.status || 'Pending'}</span></td>
+        </tr>`).join('');
+    }
+  })();
+
+  // ---- Logout ----
+  $('#logoutBtn')?.addEventListener('click', () => { show(loginPage); hide(doctorPortal); notify('Logged out'); });
+  $('#adminLogoutButton')?.addEventListener('click', () => { show(loginPage); hide(adminDash); notify('Logged out'); });
+  $('#adminLogoutHeaderBtn')?.addEventListener('click', () => { show(loginPage); hide(adminDash); notify('Logged out'); });
+})();
+</script>
 </body>
 </html>
