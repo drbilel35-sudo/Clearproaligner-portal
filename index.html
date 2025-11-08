@@ -2356,9 +2356,9 @@
             async getCases() {
                 try {
                     console.log('🔍 Fetching cases from backend...');
-                    console.log('📡 API URL:', `${BACKEND_API_URL}/cases`);
+                    console.log('📡 API URL:', `${BACKEND_API_URL}/api/cases`);
                     
-                    const response = await axios.get(`${BACKEND_API_URL}/cases`, {
+                    const response = await axios.get(`${BACKEND_API_URL}/api/cases`, {
                         timeout: 10000
                     });
                     
@@ -2387,7 +2387,7 @@
             async createCase(caseData) {
                 try {
                     console.log('📝 Creating case in backend...');
-                    const response = await axios.post(`${BACKEND_API_URL}/cases`, caseData, {
+                    const response = await axios.post(`${BACKEND_API_URL}/api/cases`, caseData, {
                         timeout: 15000,
                         headers: {
                             'Content-Type': 'application/json',
@@ -2413,7 +2413,7 @@
             // Update a case
             async updateCase(caseId, updateData) {
                 try {
-                    const response = await axios.put(`${BACKEND_API_URL}/cases/${caseId}`, updateData);
+                    const response = await axios.put(`${BACKEND_API_URL}/api/cases/${caseId}`, updateData);
                     backendConnected = true;
                     return response.data;
                 } catch (error) {
@@ -2427,7 +2427,7 @@
             // Delete a case
             async deleteCase(caseId) {
                 try {
-                    const response = await axios.delete(`${BACKEND_API_URL}/cases/${caseId}`);
+                    const response = await axios.delete(`${BACKEND_API_URL}/api/cases/${caseId}`);
                     backendConnected = true;
                     return response.data;
                 } catch (error) {
