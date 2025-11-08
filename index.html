@@ -2937,17 +2937,38 @@
             refreshBtn.onclick = forceRefreshAdminData;
             document.querySelector('.admin-header-actions').appendChild(refreshBtn);
             
-            // Add emergency debug button
-            const emergencyBtn = document.createElement('button');
-            emergencyBtn.textContent = '🚨 Debug Pending Upload';
-            emergencyBtn.className = 'btn btn-danger btn-sm';
-            emergencyBtn.style.marginLeft = '10px';
-            emergencyBtn.onclick = emergencyDebug;
-            document.querySelector('.admin-header-actions').appendChild(emergencyBtn);
-            
-            // Load initial data
-            loadCases();
-        }
+            function emergencyDebug() {
+    console.clear();
+    console.group('🚨 EMERGENCY DEBUG - Pending Upload Issue');
+    
+    console.log('📦 Total cases loaded:', cases.length);
+    console.log('📋 All cases:', cases);
+    
+    // Test current filtering
+    const pendingCases = cases.filter(c => {
+        if (!c.status) return true;
+        const status = c.status.toString().toLowerCase().trim();
+        
+        const includePatterns = ['pending', 'treatment', 'upload', 'new', 'registered', 'submitted'];
+        const excludePatterns = ['approved', 'completed', 'cancelled', 'rejected', 'finished', 'done', 'hold', 'revision'];
+        
+        const shouldInclude = includePatterns.some(pattern => status.includes(pattern));
+        const shouldExclude = excludePatterns.some(pattern => status.includes(pattern));
+        
+        return (shouldInclude || !c.treatmentPlan) && !shouldExclude;
+    });
+    
+    console.log('✅ Cases that SHOULD show in Pending Upload:', pendingCases.length);
+    console.log('📝 These cases:', pendingCases);
+    
+    // Force update the display
+    updateAdminPendingCases(cases);
+    
+    // Show notification
+    showNotification(`Found ${pendingCases.length} pending upload cases`, 'success');
+    
+    console.groupEnd();
+}
         
         // Load cases from backend
         async function loadCases() {
@@ -3135,88 +3156,128 @@
         }
         
         // Fixed admin case filtering functions
-        function updateAdminPendingCases(cases) {
-            const pendingCasesList = document.getElementById('admin-pending-cases-list');
-            if (!pendingCasesList) {
-                console.error('❌ admin-pending-cases-list element not found');
-                return;
-            }
-            
-            console.log('🔄 Updating Pending Upload section with', cases.length, 'total cases');
-            
-            // BROAD FILTER - show anything that's not completed/approved/cancelled
-            const pendingCases = cases.filter(c => {
-                if (!c.status) return true;
-                
-                const status = c.status.toString().toLowerCase().trim();
-                const normalizedStatus = status.toLowerCase();
-                
-                // EXCLUDE these statuses
-                const excludedStatuses = ['approved', 'completed', 'cancelled', 'revision', 'hold', 'done', 'finished'];
-                const shouldExclude = excludedStatuses.some(excluded => normalizedStatus.includes(excluded));
-                
-                if (shouldExclude) return false;
-                
-                // INCLUDE these statuses
-                return normalizedStatus.includes('pending') || 
-                       normalizedStatus.includes('treatment') ||
-                       normalizedStatus.includes('upload') ||
-                       normalizedStatus.includes('new') ||
-                       normalizedStatus === '' ||
-                       !c.treatmentPlan; // Include cases without treatment plans
-            });
-            
-            console.log('📋 Pending upload cases after filtering:', pendingCases.length);
-            console.log('📝 Pending cases details:', pendingCases);
-            
-            if (pendingCases.length === 0) {
-                pendingCasesList.innerHTML = `
-                    <div class="admin-empty-state">
-                        <i class="fas fa-upload"></i>
-                        <h3>No Cases Pending Upload</h3>
-                        <p>All cases have been processed or are in other status categories.</p>
-                        <button class="btn btn-primary btn-sm" onclick="emergencyDebug()" style="margin-top: 10px;">
-                            <i class="fas fa-bug"></i> Debug This
-                        </button>
-                    </div>
-                `;
-                return;
-            }
-            
-            pendingCasesList.innerHTML = pendingCases.map(caseItem => {
-                const caseId = caseItem.caseId || caseItem._id || 'Unknown Case ID';
-                const patient = caseItem.patient || caseItem.patientName || 'Unknown Patient';
-                const dentist = caseItem.doctor || caseItem.dentistName || caseItem.submittedBy || 'Unknown Dentist';
-                const status = caseItem.status || 'Pending Upload';
-                const orderDate = caseItem.orderDate || caseItem.createdAt || 'Unknown Date';
-                
-                return `
-                    <div class="admin-case-item">
-                        <div class="admin-case-info">
-                            <div class="admin-case-id">${caseId}</div>
-                            <div class="admin-case-patient">Patient: ${patient}</div>
-                            <div class="admin-case-dentist">Dentist: ${dentist}</div>
-                            <div class="admin-case-date">Order Date: ${orderDate}</div>
-                            <div class="admin-case-status">Status: ${status}</div>
-                        </div>
-                        <div class="admin-case-status">
-                            <span class="admin-status-badge admin-status-pending">${status}</span>
-                        </div>
-                        <div class="admin-case-actions">
-                            <button class="admin-action-btn" title="View Details" onclick="viewCaseDetails('${caseItem._id}')">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="admin-action-btn" title="Upload Treatment Plan" onclick="uploadTreatmentPlan('${caseItem._id}')">
-                                <i class="fas fa-file-medical"></i>
-                            </button>
-                            <button class="admin-action-btn" title="Contact Doctor" onclick="contactDoctor('${caseItem.doctor}')">
-                                <i class="fas fa-envelope"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
+        // Fixed Pending Upload Filtering
+function updateAdminPendingCases(cases) {
+    const pendingCasesList = document.getElementById('admin-pending-cases-list');
+    if (!pendingCasesList) {
+        console.error('❌ admin-pending-cases-list element not found');
+        return;
+    }
+    
+    console.log('🔄 Updating Pending Upload section with', cases.length, 'total cases');
+    
+    // ENHANCED FILTERING - More inclusive approach
+    const pendingCases = cases.filter(c => {
+        if (!c.status) return true;
+        
+        const status = c.status.toString().toLowerCase().trim();
+        
+        // BROAD INCLUSION CRITERIA
+        const includePatterns = [
+            'pending',
+            'treatment', 
+            'upload',
+            'new',
+            'registered',
+            'submitted'
+        ];
+        
+        // Check if status matches any inclusion pattern
+        const shouldInclude = includePatterns.some(pattern => 
+            status.includes(pattern)
+        );
+        
+        // EXCLUSION CRITERIA - only exclude clearly completed cases
+        const excludePatterns = [
+            'approved',
+            'completed', 
+            'cancelled',
+            'rejected',
+            'finished',
+            'done',
+            'hold',
+            'revision'
+        ];
+        
+        const shouldExclude = excludePatterns.some(pattern => 
+            status.includes(pattern)
+        );
+        
+        // Include if matches inclusion OR doesn't have treatment plan
+        return (shouldInclude || !c.treatmentPlan) && !shouldExclude;
+    });
+    
+    console.log('📋 Pending upload cases after filtering:', pendingCases.length);
+    console.log('📝 Pending cases details:', pendingCases);
+    
+    // EMERGENCY DEBUG OUTPUT
+    console.log('🚨 EMERGENCY DEBUG - Pending Upload Issue');
+    console.log('Total cases loaded:', cases.length);
+    console.log('Case 1:', cases[0]);
+    console.log('Case 2:', cases[1]);
+    console.log('Cases that SHOULD show in Pending Upload:', pendingCases.length);
+    console.log('These cases:', pendingCases);
+    
+    // Update the UI
+    if (pendingCases.length === 0) {
+        pendingCasesList.innerHTML = `
+            <div class="admin-empty-state">
+                <i class="fas fa-upload"></i>
+                <h3>No Cases Pending Upload</h3>
+                <p>All cases have been processed or are in other status categories.</p>
+                <div style="margin-top: 15px;">
+                    <button class="btn btn-primary btn-sm" onclick="loadCases()">
+                        <i class="fas fa-sync-alt"></i> Refresh Data
+                    </button>
+                    <button class="btn btn-warning btn-sm" onclick="emergencyDebug()" style="margin-left: 10px;">
+                        <i class="fas fa-bug"></i> Debug
+                    </button>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    pendingCasesList.innerHTML = pendingCases.map(caseItem => {
+        const caseId = caseItem.caseId || caseItem._id || 'Unknown Case ID';
+        const patient = caseItem.patient || caseItem.patientName || 'Unknown Patient';
+        const dentist = caseItem.doctor || caseItem.dentistName || caseItem.submittedBy || 'Unknown Dentist';
+        const status = caseItem.status || 'Pending Upload';
+        const orderDate = caseItem.orderDate || caseItem.createdAt || 'Unknown Date';
+        
+        return `
+            <div class="admin-case-item">
+                <div class="admin-case-info">
+                    <div class="admin-case-id">${caseId}</div>
+                    <div class="admin-case-patient">Patient: ${patient}</div>
+                    <div class="admin-case-dentist">Dentist: ${dentist}</div>
+                    <div class="admin-case-date">Order Date: ${formatDate(orderDate)}</div>
+                    <div class="admin-case-status">Status: ${status}</div>
+                </div>
+                <div class="admin-case-status">
+                    <span class="admin-status-badge admin-status-pending">${status}</span>
+                </div>
+                <div class="admin-case-actions">
+                    <button class="admin-action-btn" title="View Details" onclick="viewCaseDetails('${caseItem._id}')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="admin-action-btn" title="Upload Treatment Plan" onclick="uploadTreatmentPlan('${caseItem._id}')">
+                        <i class="fas fa-file-medical"></i>
+                    </button>
+                    <button class="admin-action-btn" title="Contact Doctor" onclick="contactDoctor('${dentist}')">
+                        <i class="fas fa-envelope"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Update the badge count
+    document.getElementById('pending-badge').textContent = pendingCases.length;
+    document.getElementById('pending-cases').textContent = pendingCases.length;
+    
+    console.log('✅ Pending Upload section updated with', pendingCases.length, 'cases');
+}
         
         function updateAdminRevisionCases(cases) {
             const revisionCasesList = document.getElementById('admin-revision-cases-list');
@@ -3401,7 +3462,21 @@
                 </div>
             `).join('');
         }
-        
+        // Helper function to format dates
+function formatDate(dateString) {
+    if (!dateString) return 'Unknown Date';
+    
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    } catch (error) {
+        return dateString;
+    }
+}
         // Populate doctor tables
         function populateRecentCasesTable(cases) {
             const tableBody = document.querySelector('#recent-cases-table tbody');
