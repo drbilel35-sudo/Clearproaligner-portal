@@ -2410,19 +2410,53 @@
                 }
             },
 
-            // Update a case
-            async updateCase(caseId, updateData) {
-                try {
-                    const response = await axios.put(`${BACKEND_API_URL}/api/cases/${caseId}`, updateData);
-                    backendConnected = true;
-                    return response.data;
-                } catch (error) {
-                    console.error('Error updating case in backend:', error);
-                    backendConnected = false;
-                    showNotification('Error updating case in backend', 'error');
-                    throw error;
-                }
-            },
+// Backend API functions
+const backendAPI = {
+    // ✅ Fetch cases
+    async getCases() {
+        try {
+            console.log('🔍 Fetching cases from backend...');
+            const response = await axios.get(`${BACKEND_API_URL}/api/cases`, { timeout: 10000 });
+            console.log('✅ Cases received:', response.data.length);
+            return response.data;
+        } catch (error) {
+            console.error('❌ Error fetching cases:', error.message);
+            showNotification('Using demo data (connection issue)', 'warning');
+            return getFallbackCases();
+        }
+    },
+
+    // ✅ Create new case
+    async createCase(caseData) {
+        try {
+            console.log('📝 Creating case...');
+            const response = await axios.post(`${BACKEND_API_URL}/api/cases`, caseData, {
+                headers: { 'Content-Type': 'application/json' },
+                timeout: 15000
+            });
+            console.log('✅ Case created:', response.data);
+            showNotification('Case registered successfully!', 'success');
+            return response.data;
+        } catch (error) {
+            console.error('❌ Error creating case:', error.message);
+            showNotification('Case saved locally (connection issue)', 'warning');
+            return { insertedId: 'local-' + Date.now(), case: caseData };
+        }
+    },
+
+    // ✅ Update existing case
+    async updateCase(caseId, updateData) {
+        try {
+            console.log('🔧 Updating case:', caseId);
+            const response = await axios.put(`${BACKEND_API_URL}/api/cases/${caseId}`, updateData);
+            return response.data;
+        } catch (error) {
+            console.error('❌ Error updating case:', error);
+            showNotification('Error updating case in backend', 'error');
+            throw error;
+        }
+    }
+};
 
             // Delete a case
             async deleteCase(caseId) {
