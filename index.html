@@ -2355,7 +2355,7 @@
         const backendAPI = {
             async getCases() {
                 try {
-                    console.log('🔍 Fetching cases from backend...');
+                    console.log('🔍 Fetching cases from https://clearpro-aligner-portal-backend.onrender.com/api/cases');
                     console.log('📡 API URL:', `${BACKEND_API_URL}/cases`);
                     
                     const response = await axios.get(`${BACKEND_API_URL}/cases`, {
