@@ -2950,7 +2950,32 @@
         }
         
         // Load cases from backend
-        async function loadCases() {
+        async function loadCases() function updateAdminDashboard() {
+  console.log("🧭 Updating Admin Dashboard with cases:", cases);
+  const tableBody = document.querySelector("#pending-cases tbody");
+  if (!tableBody) return;
+
+  tableBody.innerHTML = '';
+
+  if (cases.length === 0) {
+    tableBody.innerHTML = `<tr><td colspan="7" class="text-center">No cases found</td></tr>`;
+    return;
+  }
+
+  cases.forEach(cs => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${cs.caseId}</td>
+      <td>${cs.patient}</td>
+      <td>${cs.age}</td>
+      <td>${new Date(cs.orderDate).toLocaleDateString()}</td>
+      <td>${cs.doctor}</td>
+      <td>${Math.floor((Date.now() - new Date(cs.createdAt)) / (1000 * 60 * 60 * 24))} days</td>
+      <td><button class="btn btn-sm btn-primary" onclick="viewCaseDetails('${cs._id}')">View</button></td>
+    `;
+    tableBody.appendChild(row);
+  });
+} {
             try {
                 console.group('🔄 Loading Cases from Backend');
                 showNotification('Loading cases from backend...', 'info');
