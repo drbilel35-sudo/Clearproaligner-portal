@@ -4259,5 +4259,98 @@
             showLoginPage();
         }
     </script>
+
+    <script>
+/* ===========================
+   DOCTOR PORTAL → REGISTER CASE
+   =========================== */
+document.addEventListener("DOMContentLoaded", () => {
+  const caseForm = document.getElementById("case-form");
+  if (caseForm) {
+    caseForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const caseData = {
+        caseId: `CP-${Date.now()}`,
+        orderDate: document.getElementById("order-date").value,
+        doctor: document.getElementById("doctor").value,
+        patient: document.getElementById("patient").value,
+        age: document.getElementById("age").value,
+        status: "Pending Upload",
+        createdAt: new Date().toISOString(),
+      };
+
+      try {
+        const res = await axios.post(`${BACKEND_API_URL}/cases`, caseData);
+        showNotification("Case registered successfully!", "success");
+        caseForm.reset();
+        document.getElementById("case-id").value = caseData.caseId;
+        console.log("Saved Case:", res.data);
+      } catch (err) {
+        console.error("Error registering case:", err);
+        showNotification("Failed to register case. Try again.", "error");
+      }
+    });
+  }
+
+  /* ===========================
+     ADMIN DASHBOARD → FETCH CASES
+     =========================== */
+  const adminRefreshBtn = document.getElementById("adminRefreshBtn");
+  if (adminRefreshBtn) {
+    adminRefreshBtn.addEventListener("click", loadAdminCases);
+    loadAdminCases(); // auto-load on open
+  }
+
+  async function loadAdminCases() {
+    const activityContainer = document.getElementById("admin-recent-activity");
+    activityContainer.innerHTML = `<div class="admin-loading"><div class="admin-spinner"></div></div>`;
+
+    try {
+      const res = await axios.get(`${BACKEND_API_URL}/cases`);
+      const cases = res.data;
+
+      if (!cases.length) {
+        activityContainer.innerHTML = `
+          <div class="admin-empty-state">
+            <i class="fas fa-folder-open"></i><p>No cases found.</p>
+          </div>`;
+        return;
+      }
+
+      activityContainer.innerHTML = cases.map(c => `
+        <div class="admin-case-item">
+          <div class="admin-case-info">
+            <div class="admin-case-id">${c.caseId}</div>
+            <div class="admin-case-patient">${c.patient} (${c.age} yrs)</div>
+            <div class="admin-case-dentist">${c.doctor}</div>
+          </div>
+          <div class="admin-case-status">
+            <span class="admin-status-badge admin-status-pending">${c.status}</span>
+          </div>
+        </div>
+      `).join("");
+
+      // Update stats
+      document.getElementById("total-cases").innerText = cases.length;
+      document.getElementById("pending-cases").innerText = 
+        cases.filter(c => c.status === "Pending Upload").length;
+    } catch (err) {
+      console.error("Error loading admin cases:", err);
+      showNotification("Failed to load cases.", "error");
+    }
+  }
+
+  /* ===========================
+     NOTIFICATION UTILITY
+     =========================== */
+  function showNotification(message, type = "success") {
+    const notif = document.getElementById("notification");
+    notif.className = `notification active ${type}`;
+    document.getElementById("notification-text").textContent = message;
+    setTimeout(() => notif.classList.remove("active"), 3000);
+  }
+});
+</script>
 </body>
 </html>
