@@ -2355,10 +2355,10 @@
         const backendAPI = {
             async getCases() {
                 try {
-                    console.log('🔍 Fetching cases from backend...');
-                    console.log('📡 API URL:', `${BACKEND_API_URL}/cases`);
+                    console.log('🔍 Fetching cases from https://clearpro-aligner-portal-backend.onrender.com/api/cases');
+                    console.log('📡 API URL:', (`https://clearpro-aligner-portal-backend.onrender.com/api/cases`);
                     
-                    const response = await axios.get(`${BACKEND_API_URL}/cases`, {
+                    const response = await axios.get(`https://clearpro-aligner-portal-backend.onrender.com/api/cases`, {
                         timeout: 10000
                     });
                     
@@ -2386,8 +2386,8 @@
             // Create a new case
             async createCase(caseData) {
                 try {
-                    console.log('📝 Creating case in backend...');
-                    const response = await axios.post(`${BACKEND_API_URL}/cases`, caseData, {
+                    console.log('📝 Creating case in https://clearpro-aligner-portal-backend.onrender.com/api/cases');
+                    const response = await axios.post(`https://clearpro-aligner-portal-backend.onrender.com/api/cases`, caseData, {
                         timeout: 15000,
                         headers: {
                             'Content-Type': 'application/json',
@@ -2413,7 +2413,7 @@
             // Update a case
             async updateCase(caseId, updateData) {
                 try {
-                    const response = await axios.put(`${BACKEND_API_URL}/cases/${caseId}`, updateData);
+                    const response = await axios.put(`https://clearpro-aligner-portal-backend.onrender.com/api/cases/${caseId}`, updateData);
                     backendConnected = true;
                     return response.data;
                 } catch (error) {
@@ -2427,7 +2427,7 @@
             // Delete a case
             async deleteCase(caseId) {
                 try {
-                    const response = await axios.delete(`${BACKEND_API_URL}/cases/${caseId}`);
+                    const response = await axios.delete(`https://clearpro-aligner-portal-backend.onrender.com/api/cases/${caseId}`);
                     backendConnected = true;
                     return response.data;
                 } catch (error) {
