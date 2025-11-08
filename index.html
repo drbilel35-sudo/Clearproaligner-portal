@@ -3575,7 +3575,7 @@
             tableBody.innerHTML = '';
             
             const pendingCases = cases.filter(c => {
-    return ["pending", "pending upload", "pending treatment plan"]
+    return ["pending", "pending_upload", "pending treatment plan"]
         .includes((c.status || "").toLowerCase());
 });
             if (pendingCases.length === 0) {
