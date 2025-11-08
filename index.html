@@ -4333,8 +4333,7 @@ function formatDate(dateString) {
             
             showLoginPage();
         }
-    </script>
-
+    
     <script>
 /* ===========================
    DOCTOR PORTAL → REGISTER CASE
@@ -4382,7 +4381,7 @@ document.addEventListener("DOMContentLoaded", () => {
     activityContainer.innerHTML = `<div class="admin-loading"><div class="admin-spinner"></div></div>`;
 
     try {
-      const res = await axios.get(`${BACKEND_API_URL}/cases`);
+      const res = await axios.get(`${https://clearpro-aligner-portal-backend.onrender.com/api}/cases`);
       const cases = res.data;
 
       if (!cases.length) {
