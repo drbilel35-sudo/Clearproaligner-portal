@@ -3574,8 +3574,10 @@
             
             tableBody.innerHTML = '';
             
-            const pendingCases = cases.filter(caseData => caseData.status === "Pending Approval");
-            
+            const pendingCases = cases.filter(c => {
+    return ["pending", "pending upload", "pending treatment plan"]
+        .includes((c.status || "").toLowerCase());
+});
             if (pendingCases.length === 0) {
                 tableBody.innerHTML = '<tr><td colspan="7" class="empty-state">No pending approval cases found</td></tr>';
                 return;
